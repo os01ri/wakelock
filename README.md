@@ -1,7 +1,11 @@
-# Wakelock [![GitHub stars](https://img.shields.io/github/stars/creativecreatorormaybenot/wakelock.svg)](https://github.com/creativecreatorormaybenot/wakelock) [![Pub version](https://img.shields.io/pub/v/wakelock.svg)](https://pub.dev/packages/wakelock) [![Twitter Follow](https://img.shields.io/twitter/follow/creativemaybeno?label=Follow&style=social)](https://twitter.com/creativemaybeno)
+# wakelock [![Pub version](https://img.shields.io/pub/v/wakelock.svg)](https://pub.dev/packages/wakelock) [![GitHub stars](https://img.shields.io/github/stars/creativecreatorormaybenot/wakelock.svg)](https://github.com/creativecreatorormaybenot/wakelock) [![Twitter Follow](https://img.shields.io/twitter/follow/creativemaybeno?label=Follow&style=social)](https://twitter.com/creativemaybeno)
 
-Wakelock is Flutter plugin that allows you to keep the device screen awake, i.e. prevent the screen
-from sleeping.
+Plugin that allows you to keep the device screen awake, i.e. prevent the screen from sleeping
+
+---
+
+The plugin allows you to enable and toggle the screen wakelock, which prevents the screen from turning off automatically.  
+Essentially, this allows you to keep the device awake, i.e. prevent the device from sleeping.
 
 ## Supported platforms
 
@@ -14,36 +18,92 @@ from sleeping.
 | Windows  |         ✅         |
 | Linux    |      planned       |
 
-## Getting started
+## Usage
 
-To learn more about the plugin and getting started, you can view [the main package (`wakelock`) README](https://github.com/creativecreatorormaybenot/wakelock/blob/main/wakelock/README.md).
+To use this plugin, follow the [installing guide](https://pub.dev/packages/wakelock/install).
 
-### Plugin structure
+The `wakelock` plugin **does not require any special _permissions_** on any platform :)  
+This is because it only enables the _screen wakelock_ and not any partial (CPU) wakelocks that would keep the app alive in the background.
 
-The `wakelock` plugin uses the [federated plugins approach](https://flutter.dev/docs/development/packages-and-plugins/developing-packages#federated-plugins).  
-For this plugin, it means that the basic API is defined using [`pigeon`](https://pub.dev/packages/pigeon). The pigeon files can be found in the [`pigeons` directory](https://github.com/creativecreatorormaybenot/wakelock/tree/main/wakelock/pigeons)
-in the main package. The API is defined in Dart in the [`wakelock_platform_interface` package](https://github.com/creativecreatorormaybenot/wakelock/tree/main/wakelock_platform_interface).  
-Furthermore, the Android and iOS implementations can be found in the main package, while the web implementation is in the [`wakelock_web` package](https://github.com/creativecreatorormaybenot/wakelock/tree/main/wakelock_platform_interface).
+### Implementation
 
-The packages in this repo are the following:
+Everything in this plugin is controlled via the [`Wakelock` class](https://pub.dev/documentation/wakelock/latest/wakelock/Wakelock-class.html).  
+If you want to enable the wakelock, i.e. keep the device awake, you can simply call [`Wakelock.enable`](https://pub.dev/documentation/wakelock/latest/wakelock/Wakelock/enable.html)
+and to disable it again, you can use [`Wakelock.disable`](https://pub.dev/documentation/wakelock/latest/wakelock/Wakelock/disable.html):
 
-| Package                                                                                                                        | Implementations                                     |
-| ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
-| [`wakelock`](https://github.com/creativecreatorormaybenot/wakelock/tree/main/wakelock)                                       | Main plugin package + Android & iOS implementations |
-| [`wakelock_macos`](https://github.com/creativecreatorormaybenot/wakelock/tree/main/wakelock_macos)                           | macOS implementation                                |
-| [`wakelock_platform_interface`](https://github.com/creativecreatorormaybenot/wakelock/tree/main/wakelock_platform_interface) | Basic API definition & message handling             |
-| [`wakelock_web`](https://github.com/creativecreatorormaybenot/wakelock/tree/main/wakelock_web)                               | Web implementation                                  |
-| [`wakelock_windows`](https://github.com/creativecreatorormaybenot/wakelock/tree/main/wakelock_windows)                           | Windows implementation                              |
+```dart
+import 'package:wakelock/wakelock.dart';
+// ...
 
-## Contributing
+// The following line will enable the Android and iOS wakelock.
+Wakelock.enable();
 
-If you want to contribute to this plugin, follow the [contributing guide](https://github.com/creativecreatorormaybenot/wakelock/blob/main/.github/CONTRIBUTING.md).
+// The next line disables the wakelock again.
+Wakelock.disable();
+```
 
-## Origin
+For more advanced usage, you can pass a `bool` to [`Wakelock.toggle`](https://pub.dev/documentation/wakelock/latest/wakelock/Wakelock/toggle.html)
+to enable or disable the wakelock and also retrieve the current wakelock status using
+[`Wakelock.isEnabled`](https://pub.dev/documentation/wakelock/latest/wakelock/Wakelock/isEnabled.html):
 
-Originally, this plugin was based on [`screen`](https://pub.dev/packages/screen).  
-Specifically, the wakelock functionality was extracted into this plugin due to lack of maintenance
-by the author of the `screen` plugin.
+```dart
+import 'package:wakelock/wakelock.dart';
+// ...
 
-Today, the `wakelock` plugin has been completely refreshed (using latest Flutter standards and
-platform integration) with added support for web, Windows, & macOS.
+// The following lines of code toggle the wakelock based on a bool value.
+bool enable = true;
+// The following statement enables the wakelock.
+Wakelock.toggle(enable: enable);
+
+enable = false;
+// The following statement disables the wakelock.
+Wakelock.toggle(enable: enable);
+
+// If you want to retrieve the current wakelock status,
+// you will have to be in an async scope
+// to await the Future returned by `enabled`.
+bool wakelockEnabled = await Wakelock.enabled;
+```
+
+If you want to wait for the wakelock toggle to complete (which takes an insignificant amount of
+time), you can also `await` any of `Wakelock.enable`, `Wakelock.disable`, and `Wakelock.toggle`.
+
+### Ensure the `WidgetsBinding` is initialized
+
+If you want to call `Wakelock.enable()` or the other functions before `runApp()` (e.g. in `main()`),
+you will have to ensure that the `WidgetsBinding` is initialized first:
+
+```dart
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  Wakelock.enable();
+
+  runApp(..);
+}
+```
+
+In general, it is advisable to make your wakelock dependent on certain components within your app
+instead, e.g. by only enabling it (continually) when a certain widget is visible.
+There is no negative impact in calling `Wakelock.enable()` more often.
+
+### Calling `Wakelock.enable()` in `main()`
+
+As touched on in the previous paragraph, calling `Wakelock.enable()` in your `main()` function is
+not the best approach for a number of reasons.
+
+The most important factors are:
+
+1. Users expect their screen to automatically turn off unless e.g. a video is playing.  
+   It is unlikely that your whole app requires the screen to always stay on.
+2. The wakelock can be released by external sources at any time (e.g. by the OS).  
+   Only calling `Wakelock.enable()` once will most likely mean that the screen turns off at one
+   point or another anyway.
+
+This is why you should instead prefer to enable the wakelock whenever components inside of your app
+that require the screen to stay on are active. This can e.g. happen in the `build` method of your
+widget.
+
+## Learn more
+
+If you want to learn more about how this plugin works, how to contribute, etc., you can read through
+the [main README on GitHub](https://github.com/creativecreatorormaybenot/wakelock).
